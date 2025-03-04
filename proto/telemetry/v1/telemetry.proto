@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package telemetry.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/vobbilis/codegen/visual/pkg/telemetry/v1;telemetryv1";
+
+// Connection tracking service
+service ConnectionTracker {
+    // Stream connection events
+    rpc StreamConnections(StreamConnectionsRequest) returns (stream ConnectionEvent) {}
+    
+    // Get connection statistics
+    rpc GetConnectionStats(ConnectionStatsRequest) returns (ConnectionStats) {}
+}
+
+// Connection event
+message ConnectionEvent {
+    // Event metadata
+    google.protobuf.Timestamp timestamp = 1;
+    string namespace = 2;
+    string pod_name = 3;
+    string container_id = 4;
+    
+    // Connection details
+    ConnectionKey connection = 5;
+    ConnectionInfo info = 6;
+    EventType type = 7;
+}
+
+// Connection key
+message ConnectionKey {
+    bytes src_ip = 1;
+    bytes dst_ip = 2;
+    uint32 src_port = 3;
+    uint32 dst_port = 4;
+    Protocol protocol = 5;
+}
+
+// Connection info
+message ConnectionInfo {
+    // TCP State
+    TCPState tcp_state = 1;
+    uint32 retransmits = 2;
+    uint32 rtt_usec = 3;
+    uint32 window_size = 4;
+    
+    // UDP State
+    uint32 udp_rx_dropped = 5;
+    uint32 udp_tx_dropped = 6;
+    
+    // Conntrack
+    uint32 ct_state = 7;
+    uint32 ct_zone = 8;
+    uint32 ct_mark = 9;
+    bytes ct_labels = 10;
+    bytes nat_ip = 11;
+    uint32 nat_port = 12;
+    
+    // Metrics
+    uint64 bytes_in = 13;
+    uint64 bytes_out = 14;
+    uint64 packets_in = 15;
+    uint64 packets_out = 16;
+    
+    // Timestamps
+    google.protobuf.Timestamp start_ts = 17;
+    google.protobuf.Timestamp last_seen = 18;
+}
+
+// Event type
+enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_NEW_TCP = 1;
+    EVENT_TYPE_TCP_UPDATE = 2;
+    EVENT_TYPE_NEW_UDP = 3;
+    EVENT_TYPE_UDP_UPDATE = 4;
+    EVENT_TYPE_CONNTRACK = 5;
+    EVENT_TYPE_TCP_INGRESS = 6;
+    EVENT_TYPE_UDP_INGRESS = 7;
+    EVENT_TYPE_TCP_EGRESS = 8;
+    EVENT_TYPE_UDP_EGRESS = 9;
+}
+
+// Protocol
+enum Protocol {
+    PROTOCOL_UNSPECIFIED = 0;
+    PROTOCOL_TCP = 6;
+    PROTOCOL_UDP = 17;
+}
+
+// TCP State
+enum TCPState {
+    TCP_STATE_UNSPECIFIED = 0;
+    TCP_STATE_ESTABLISHED = 1;
+    TCP_STATE_SYN_SENT = 2;
+    TCP_STATE_SYN_RECV = 3;
+    TCP_STATE_FIN_WAIT1 = 4;
+    TCP_STATE_FIN_WAIT2 = 5;
+    TCP_STATE_TIME_WAIT = 6;
+    TCP_STATE_CLOSE = 7;
+    TCP_STATE_CLOSE_WAIT = 8;
+    TCP_STATE_LAST_ACK = 9;
+    TCP_STATE_LISTEN = 10;
+    TCP_STATE_CLOSING = 11;
+}
+
+// Request/Response messages
+message StreamConnectionsRequest {
+    string namespace = 1;
+    string pod_name = 2;
+    Protocol protocol = 3;
+}
+
+message ConnectionStatsRequest {
+    string namespace = 1;
+    string pod_name = 2;
+    google.protobuf.Timestamp start_time = 3;
+    google.protobuf.Timestamp end_time = 4;
+}
+
+message ConnectionStats {
+    message Stats {
+        uint64 total_connections = 1;
+        uint64 total_bytes_in = 2;
+        uint64 total_bytes_out = 3;
+        uint64 total_packets_in = 4;
+        uint64 total_packets_out = 5;
+        uint32 tcp_connections = 6;
+        uint32 udp_connections = 7;
+    }
+    
+    string namespace = 1;
+    string pod_name = 2;
+    google.protobuf.Timestamp bucket_time = 3;
+    Stats stats = 4;
+} 

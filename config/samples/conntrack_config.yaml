@@ -1,0 +1,39 @@
+apiVersion: conntrack.vobbilis.io/v1alpha1
+kind: ConntrackConfig
+metadata:
+  name: example-config
+  namespace: default
+spec:
+  # Default action for connections that don't match any filter
+  defaultAction: deny
+  
+  # Maximum number of connections to track
+  maxConnections: 100000
+  
+  # IP filtering rules
+  ipFilters:
+  - name: allow-internal-web
+    sourceCIDR: "10.0.0.0/8"
+    destinationCIDR: "10.0.0.0/8"
+    ports:
+    - start: 80
+      end: 80
+    - start: 443
+      end: 443
+    protocol: tcp
+    action: allow
+    
+  - name: block-external-ssh
+    destinationCIDR: "0.0.0.0/0"
+    ports:
+    - start: 22
+      end: 22
+    protocol: tcp
+    action: deny
+    
+  - name: allow-dns
+    ports:
+    - start: 53
+      end: 53
+    protocol: both
+    action: allow 

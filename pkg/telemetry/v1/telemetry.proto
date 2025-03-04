@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package telemetry.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/vobbilis/codegen/visual/pkg/telemetry/v1";
+
+// ConnectionTracker service provides methods to track network connections
+service ConnectionTracker {
+    // StreamConnections streams active connections for a given namespace and pod
+    rpc StreamConnections(StreamConnectionsRequest) returns (stream ConnectionEvent) {}
+    
+    // GetConnectionStats retrieves connection statistics for a given time range
+    rpc GetConnectionStats(ConnectionStatsRequest) returns (ConnectionStats) {}
+}
+
+// EventType represents different types of connection events
+enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_TCP_NEW = 1;
+    EVENT_TYPE_TCP_UPDATE = 2;
+    EVENT_TYPE_TCP_CLOSE = 3;
+    EVENT_TYPE_UDP_NEW = 4;
+    EVENT_TYPE_UDP_UPDATE = 5;
+    EVENT_TYPE_UDP_CLOSE = 6;
+    EVENT_TYPE_TCP_RETRANSMIT = 7;
+}
+
+// ConnectionEvent represents a network connection event
+message ConnectionEvent {
+    EventType event_type = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    
+    // Connection Identity
+    string pod_name = 3;
+    string namespace = 4;
+    string container_id = 5;
+    
+    // Network Info
+    int32 protocol = 6;
+    bytes src_ip = 7;
+    int32 src_port = 8;
+    bytes dst_ip = 9;
+    int32 dst_port = 10;
+    
+    // TCP State
+    optional int32 tcp_state = 11;
+    optional int32 retransmits = 12;
+    optional int32 retransmit_bytes = 13;
+    optional int64 last_retrans_ts = 14;
+    optional int32 rtt_usec = 15;
+    optional int32 window_size = 16;
+    
+    // UDP State
+    optional int32 udp_rx_dropped = 17;
+    optional int32 udp_tx_dropped = 18;
+    
+    // Conntrack Info
+    optional int32 ct_state = 19;
+    optional int32 ct_zone = 20;
+    optional int32 ct_mark = 21;
+    bytes ct_labels = 22;
+    optional bytes nat_ip = 23;
+    optional int32 nat_port = 24;
+    
+    // Metrics
+    int64 bytes_in = 25;
+    int64 bytes_out = 26;
+    int64 packets_in = 27;
+    int64 packets_out = 28;
+    
+    // Timestamps
+    google.protobuf.Timestamp start_ts = 29;
+    google.protobuf.Timestamp last_seen = 30;
+}
+
+// StreamConnectionsRequest represents a request to stream connections
+message StreamConnectionsRequest {
+    string namespace = 1;
+    string pod_name = 2;
+    int32 protocol = 3;
+}
+
+// ConnectionStatsRequest represents a request for connection statistics
+message ConnectionStatsRequest {
+    string namespace = 1;
+    string pod_name = 2;
+    google.protobuf.Timestamp start_time = 3;
+    google.protobuf.Timestamp end_time = 4;
+}
+
+// ConnectionStats represents aggregated connection statistics
+message ConnectionStats {
+    google.protobuf.Timestamp bucket_time = 1;
+    int64 total_connections = 2;
+    int64 total_bytes_in = 3;
+    int64 total_bytes_out = 4;
+    int64 total_packets_in = 5;
+    int64 total_packets_out = 6;
+    int32 tcp_connections = 7;
+    int32 udp_connections = 8;
+} 
